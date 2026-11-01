@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 
   const text =
-    `📩 새 견적 요청\n` +
+    `📩 [럭키방충망] 새 견적 요청\n` +
     `• 이름: ${entry.name}\n` +
     `• 연락처: ${entry.phone}\n` +
     `• 품목: ${entry.type || '-'}\n` +
