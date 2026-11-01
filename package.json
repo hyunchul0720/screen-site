@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "럭키방충망 홈페이지 (Vercel 배포용)",
+  "description": "더푸른홈케어 홈페이지 (Vercel 배포용)",
   "scripts": {
     "dev": "vercel dev"
   },
