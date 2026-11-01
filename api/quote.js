@@ -1,9 +1,9 @@
 // Vercel Serverless Function: POST /api/quote
-// 견적 요청을 받아 검증한 뒤, QUOTE_WEBHOOK_URL 환경변수가 있으면 그곳으로 전달합니다.
+// 견적 신청을 받아 검증한 뒤, QUOTE_WEBHOOK_URL 환경변수가 있으면 그곳으로 전달합니다.
 // (Slack Incoming Webhook / Discord Webhook / Make·Zapier 웹훅 등)
 // 환경변수가 없으면 Vercel 함수 로그에만 기록합니다.
 
-const MAX_LEN = { name: 40, phone: 20, type: 40, area: 60, message: 1000 };
+const MAX_LEN = { name: 40, phone: 20, type: 40, count: 3, address: 100, date: 10, time: 20, message: 1000 };
 
 function clean(value, max) {
   return String(value ?? '').trim().slice(0, max);
@@ -27,29 +27,29 @@ export default async function handler(req, res) {
   // 스팸 봇 차단용 숨김 필드 — 값이 있으면 조용히 성공 처리
   if (body.website) return res.status(200).json({ ok: true });
 
-  const entry = {
-    name: clean(body.name, MAX_LEN.name),
-    phone: clean(body.phone, MAX_LEN.phone),
-    type: clean(body.type, MAX_LEN.type),
-    area: clean(body.area, MAX_LEN.area),
-    message: clean(body.message, MAX_LEN.message),
-    receivedAt: new Date().toISOString(),
-  };
+  const entry = Object.fromEntries(
+    Object.entries(MAX_LEN).map(([key, max]) => [key, clean(body[key], max)])
+  );
+  entry.receivedAt = new Date().toISOString();
 
   if (!entry.name) return res.status(400).json({ ok: false, error: '이름을 입력해 주세요.' });
   if (!/^[0-9+\-\s()]{8,20}$/.test(entry.phone)) {
     return res.status(400).json({ ok: false, error: '연락처를 정확히 입력해 주세요.' });
   }
+  if (!entry.address) return res.status(400).json({ ok: false, error: '주소를 입력해 주세요.' });
+  if (entry.date && !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) entry.date = '';
+  if (entry.count && !/^\d{1,2}$/.test(entry.count)) entry.count = '';
   if (body.agree !== true) {
     return res.status(400).json({ ok: false, error: '개인정보 수집에 동의해 주세요.' });
   }
 
   const text =
-    `📩 [럭키방충망] 새 견적 요청\n` +
+    `📩 [럭키방충망] 새 견적 신청\n` +
     `• 이름: ${entry.name}\n` +
     `• 연락처: ${entry.phone}\n` +
-    `• 품목: ${entry.type || '-'}\n` +
-    `• 지역: ${entry.area || '-'}\n` +
+    `• 품목: ${entry.type || '-'}${entry.count ? ` (창 ${entry.count}개)` : ''}\n` +
+    `• 주소: ${entry.address}\n` +
+    `• 희망 일시: ${entry.date || '날짜 무관'} / ${entry.time || '시간 무관'}\n` +
     `• 요청사항: ${entry.message || '-'}`;
 
   const webhook = process.env.QUOTE_WEBHOOK_URL;

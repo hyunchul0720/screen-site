@@ -22,11 +22,54 @@ if ('IntersectionObserver' in window) {
     entries.forEach((e) => {
       if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
   reveals.forEach((el) => io.observe(el));
 } else {
   reveals.forEach((el) => el.classList.add('in'));
 }
+
+// 주택 유형 탭
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function selectTab(tab) {
+  tabs.forEach((t) => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', String(on));
+    t.tabIndex = on ? 0 : -1;
+    const panel = document.getElementById(t.getAttribute('aria-controls'));
+    panel.hidden = !on;
+    if (on) panel.classList.add('in');
+  });
+}
+tabs.forEach((t, i) => {
+  t.addEventListener('click', () => selectTab(t));
+  t.addEventListener('keydown', (e) => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    const next = tabs[(i + d + tabs.length) % tabs.length];
+    selectTab(next); next.focus();
+  });
+});
+
+// 상식 더보기
+const guideBox = document.getElementById('guideBox');
+const guideToggle = document.getElementById('guideToggle');
+guideToggle.addEventListener('click', () => {
+  const open = guideBox.classList.toggle('open');
+  guideToggle.textContent = open ? '접기' : '더 보기';
+  guideToggle.setAttribute('aria-expanded', String(open));
+});
+
+// 제품별 "견적 받기" → 품목 자동 선택
+const typeSelect = document.getElementById('type');
+document.querySelectorAll('[data-type]').forEach((a) =>
+  a.addEventListener('click', () => { typeSelect.value = a.dataset.type; })
+);
+
+// 희망 날짜: 오늘 이전 선택 불가
+const dateInput = document.getElementById('date');
+const today = new Date();
+today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+dateInput.min = today.toISOString().slice(0, 10);
 
 // 견적 폼 → /api/quote
 const form = document.getElementById('quote');
@@ -56,10 +99,10 @@ form.addEventListener('submit', async (e) => {
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json.ok) throw new Error(json.error || '전송에 실패했습니다.');
-    showMessage('접수되었습니다. 곧 연락드리겠습니다.', 'ok');
+    showMessage('신청되었습니다. 확인 후 바로 연락드리겠습니다.', 'ok');
     form.reset();
   } catch (err) {
-    showMessage(`${err.message} 전화(1588-0000)로 문의해 주세요.`, 'err');
+    showMessage(`${err.message} 전화(1588-0000)나 카카오톡으로 문의해 주세요.`, 'err');
   } finally {
     submitBtn.disabled = false;
     submitBtn.innerHTML = submitHTML;
