@@ -1,0 +1,13 @@
+{
+  "name": "screen-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "방충망 시공 업체 홈페이지 (Vercel 배포용)",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
