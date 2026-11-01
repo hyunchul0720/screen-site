@@ -1,3 +1,49 @@
+// 관리자 화면에서 바꾼 연락처·사업자 정보를 불러와 페이지에 반영
+const DEFAULTS = {
+  phone: '1588-0000',
+  sms: '010-0000-0000',
+  kakaoPrefix: 'https://pf.kakao.com/',
+  blogPrefix: 'https://blog.naver.com/',
+};
+let contactPhone = DEFAULTS.phone;
+
+function replaceText(from, to) {
+  if (!from || !to || from === to) return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (n.nodeValue.includes(from)) n.nodeValue = n.nodeValue.split(from).join(to);
+  }
+}
+
+async function applySettings() {
+  try {
+    const res = await fetch('/api/settings');
+    if (!res.ok) return;
+    const { settings: s } = await res.json();
+    if (!s) return;
+    const digits = (v) => String(v).replace(/[^0-9+]/g, '');
+    if (s.phone) {
+      document.querySelectorAll('a[href^="tel:"]').forEach((a) => { a.href = `tel:${digits(s.phone)}`; });
+      replaceText(DEFAULTS.phone, s.phone);
+      contactPhone = s.phone;
+    }
+    if (s.sms) {
+      document.querySelectorAll('a[href^="sms:"]').forEach((a) => { a.href = `sms:${digits(s.sms)}`; });
+      replaceText(DEFAULTS.sms, s.sms);
+    }
+    const safe = (u) => /^https:\/\//.test(u || '');
+    if (safe(s.kakaoUrl)) document.querySelectorAll(`a[href^="${DEFAULTS.kakaoPrefix}"]`).forEach((a) => { a.href = s.kakaoUrl; });
+    if (safe(s.blogUrl)) document.querySelectorAll(`a[href^="${DEFAULTS.blogPrefix}"]`).forEach((a) => { a.href = s.blogUrl; });
+    document.querySelectorAll('[data-s]').forEach((node) => {
+      const v = s[node.dataset.s];
+      if (v) node.textContent = v;
+    });
+  } catch {
+    /* 로컬 파일로 열었거나 서버 오류 — 기본값 유지 */
+  }
+}
+if (location.protocol.startsWith('http')) applySettings();
+
 // 헤더: 스크롤 시 테두리 표시
 const header = document.getElementById('top');
 const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 8);
@@ -102,7 +148,7 @@ form.addEventListener('submit', async (e) => {
     showMessage('신청되었습니다. 확인 후 바로 연락드리겠습니다.', 'ok');
     form.reset();
   } catch (err) {
-    showMessage(`${err.message} 전화(1588-0000)나 카카오톡으로 문의해 주세요.`, 'err');
+    showMessage(`${err.message} 전화(${contactPhone})나 카카오톡으로 문의해 주세요.`, 'err');
   } finally {
     submitBtn.disabled = false;
     submitBtn.innerHTML = submitHTML;

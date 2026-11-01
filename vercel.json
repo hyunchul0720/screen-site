@@ -14,6 +14,14 @@
     {
       "source": "/(.*)\\.(css|js|svg)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+    },
+    {
+      "source": "/admin(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
     }
   ]
 }

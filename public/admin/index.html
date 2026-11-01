@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>럭키방충망 관리자</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="view-login" class="login" hidden>
+  <form id="login-form" class="login-card">
+    <div class="brand"><img src="/favicon.svg" alt="" width="40" height="40"><div><strong>럭키방충망</strong><span>관리자</span></div></div>
+    <label for="pw">비밀번호</label>
+    <input id="pw" name="password" type="password" autocomplete="current-password" required autofocus>
+    <button class="btn primary" type="submit">로그인</button>
+    <p class="msg" id="login-msg" role="alert"></p>
+  </form>
+</div>
+
+<!-- 앱 -->
+<div id="view-app" hidden>
+  <header class="topbar">
+    <div class="brand"><img src="/favicon.svg" alt="" width="32" height="32"><div><strong>럭키방충망</strong><span>관리자</span></div></div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-view="quotes" aria-selected="true">견적 관리 <b class="count" id="new-count" hidden></b></button>
+      <button class="tab" role="tab" data-view="settings" aria-selected="false">사이트 설정</button>
+    </nav>
+    <div class="top-actions">
+      <a class="btn ghost sm" href="/" target="_blank" rel="noopener">사이트 보기</a>
+      <button class="btn ghost sm" id="logout">로그아웃</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="banner" id="db-banner" hidden>
+      <strong>데이터베이스가 연결되지 않았습니다.</strong>
+      견적 저장과 설정 변경을 하려면 Vercel 프로젝트 → <b>Storage</b> → <b>Upstash (Redis)</b>를 연결한 뒤 다시 배포해 주세요.
+    </div>
+
+    <!-- 견적 관리 -->
+    <section id="view-quotes">
+      <div class="stats" id="stats"></div>
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="이름 · 연락처 · 주소 검색">
+        <div class="toolbar-actions">
+          <button class="btn ghost sm" id="refresh">새로고침</button>
+          <button class="btn ghost sm" id="export">엑셀(CSV) 받기</button>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+      <p class="empty" id="empty" hidden>표시할 견적이 없습니다.</p>
+    </section>
+
+    <!-- 사이트 설정 -->
+    <section id="view-settings" hidden>
+      <form id="settings-form" class="panel">
+        <h2>연락처</h2>
+        <p class="hint">홈페이지의 모든 전화 · 문자 · 카톡 버튼에 반영됩니다. 저장 후 1분 안에 사이트에 적용됩니다.</p>
+        <div class="grid2">
+          <div><label for="s-phone">대표전화</label><input id="s-phone" name="phone" required></div>
+          <div><label for="s-sms">문자 받을 번호</label><input id="s-sms" name="sms" required></div>
+          <div><label for="s-kakaoUrl">카카오톡 채널 주소</label><input id="s-kakaoUrl" name="kakaoUrl" type="url" required placeholder="https://pf.kakao.com/_xxxxx"></div>
+          <div><label for="s-blogUrl">블로그 주소</label><input id="s-blogUrl" name="blogUrl" type="url" required placeholder="https://blog.naver.com/아이디"></div>
+          <div class="full"><label for="s-hours">상담시간</label><input id="s-hours" name="hours" required></div>
+        </div>
+        <h2>사업자 정보</h2>
+        <p class="hint">홈페이지 맨 아래에 표시됩니다.</p>
+        <div class="grid2">
+          <div><label for="s-ceo">대표자</label><input id="s-ceo" name="ceo" required></div>
+          <div><label for="s-bizNo">사업자등록번호</label><input id="s-bizNo" name="bizNo" required></div>
+          <div class="full"><label for="s-address">사업장 주소</label><input id="s-address" name="address" required></div>
+        </div>
+        <div class="form-foot">
+          <p class="msg" id="settings-msg" role="status"></p>
+          <button class="btn primary" type="submit">저장</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<!-- 견적 상세 -->
+<dialog id="detail">
+  <form method="dialog" class="detail-head">
+    <h3 id="d-title">견적 상세</h3>
+    <button class="icon-btn" aria-label="닫기">✕</button>
+  </form>
+  <dl class="detail-grid" id="d-fields"></dl>
+  <label for="d-status">진행 상태</label>
+  <select id="d-status"></select>
+  <label for="d-memo">메모 (고객에게 보이지 않음)</label>
+  <textarea id="d-memo" rows="4" maxlength="2000" placeholder="통화 내용, 견적 금액, 방문 일정 등"></textarea>
+  <div class="detail-foot">
+    <button class="btn danger sm" id="d-delete" type="button">삭제</button>
+    <span class="msg" id="d-msg" role="status"></span>
+    <button class="btn primary" id="d-save" type="button">저장</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/admin/admin.js" defer></script>
+</body>
+</html>

@@ -1,7 +1,11 @@
 // Vercel Serverless Function: POST /api/quote
-// 견적 신청을 받아 검증한 뒤, QUOTE_WEBHOOK_URL 환경변수가 있으면 그곳으로 전달합니다.
-// (Slack Incoming Webhook / Discord Webhook / Make·Zapier 웹훅 등)
-// 환경변수가 없으면 Vercel 함수 로그에만 기록합니다.
+// 견적 신청을 받아 검증한 뒤
+//   1) Redis가 연결돼 있으면 저장 (관리자 페이지에서 확인)
+//   2) QUOTE_WEBHOOK_URL이 있으면 Slack/Discord/Make 등으로 알림
+// 둘 다 없으면 Vercel 함수 로그에만 기록합니다.
+import crypto from 'node:crypto';
+import { hasRedis } from './_lib/redis.js';
+import { saveQuote } from './_lib/quotes.js';
 
 const MAX_LEN = { name: 40, phone: 20, type: 40, count: 3, address: 100, date: 10, time: 20, message: 1000 };
 
@@ -30,7 +34,6 @@ export default async function handler(req, res) {
   const entry = Object.fromEntries(
     Object.entries(MAX_LEN).map(([key, max]) => [key, clean(body[key], max)])
   );
-  entry.receivedAt = new Date().toISOString();
 
   if (!entry.name) return res.status(400).json({ ok: false, error: '이름을 입력해 주세요.' });
   if (!/^[0-9+\-\s()]{8,20}$/.test(entry.phone)) {
@@ -43,32 +46,57 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: '개인정보 수집에 동의해 주세요.' });
   }
 
+  const quote = {
+    id: crypto.randomUUID(),
+    ...entry,
+    status: 'new',
+    memo: '',
+    receivedAt: new Date().toISOString(),
+  };
+
   const text =
     `📩 [럭키방충망] 새 견적 신청\n` +
-    `• 이름: ${entry.name}\n` +
-    `• 연락처: ${entry.phone}\n` +
-    `• 품목: ${entry.type || '-'}${entry.count ? ` (창 ${entry.count}개)` : ''}\n` +
-    `• 주소: ${entry.address}\n` +
-    `• 희망 일시: ${entry.date || '날짜 무관'} / ${entry.time || '시간 무관'}\n` +
-    `• 요청사항: ${entry.message || '-'}`;
+    `• 이름: ${quote.name}\n` +
+    `• 연락처: ${quote.phone}\n` +
+    `• 품목: ${quote.type || '-'}${quote.count ? ` (창 ${quote.count}개)` : ''}\n` +
+    `• 주소: ${quote.address}\n` +
+    `• 희망 일시: ${quote.date || '날짜 무관'} / ${quote.time || '시간 무관'}\n` +
+    `• 요청사항: ${quote.message || '-'}`;
 
   const webhook = process.env.QUOTE_WEBHOOK_URL;
-  try {
-    if (webhook) {
+  let delivered = 0;
+  let attempted = 0;
+
+  if (hasRedis()) {
+    attempted++;
+    try {
+      await saveQuote(quote);
+      delivered++;
+    } catch (err) {
+      console.error('[quote] redis save failed', err);
+    }
+  }
+
+  if (webhook) {
+    attempted++;
+    try {
       const r = await fetch(webhook, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // text: Slack, content: Discord, 나머지 필드: Make/Zapier 등에서 활용
-        body: JSON.stringify({ text, content: text, ...entry }),
+        body: JSON.stringify({ text, content: text, ...quote }),
       });
       if (!r.ok) throw new Error(`webhook responded ${r.status}`);
-    } else {
-      console.log('[quote]', JSON.stringify(entry));
+      delivered++;
+    } catch (err) {
+      console.error('[quote] webhook failed', err);
     }
-  } catch (err) {
-    console.error('[quote] forward failed', err);
-    return res.status(502).json({ ok: false, error: '일시적인 오류로 접수하지 못했습니다.' });
   }
 
+  if (attempted === 0) console.log('[quote]', JSON.stringify(quote));
+
+  if (attempted > 0 && delivered === 0) {
+    return res.status(502).json({ ok: false, error: '일시적인 오류로 접수하지 못했습니다.' });
+  }
   return res.status(200).json({ ok: true });
 }
