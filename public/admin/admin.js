@@ -1,4 +1,4 @@
-// 럭키방충망 관리자 — 고객이 입력한 값은 항상 textContent로만 화면에 넣습니다(XSS 방지).
+// 더푸른홈케어 관리자 — 고객이 입력한 값은 항상 textContent로만 화면에 넣습니다(XSS 방지).
 
 const STATUS = {
   new:       { label: '신규',     c: 'var(--s-new)',       cb: 'var(--s-new-bg)' },

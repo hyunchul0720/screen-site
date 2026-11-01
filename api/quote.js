@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   };
 
   const text =
-    `📩 [럭키방충망] 새 견적 신청\n` +
+    `📩 [더푸른홈케어] 새 견적 신청\n` +
     `• 이름: ${quote.name}\n` +
     `• 연락처: ${quote.phone}\n` +
     `• 품목: ${quote.type || '-'}${quote.count ? ` (창 ${quote.count}개)` : ''}\n` +
